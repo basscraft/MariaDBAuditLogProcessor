@@ -32,7 +32,7 @@ public class BatchApplication implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         try {
             log.info("{} Application Started", LogProcessService.class.getSimpleName());
-            service.test();
+            service.auditLogParse();
             log.info("{} Application Completed", LogProcessService.class.getSimpleName());
         } catch (Exception e) {
             /*

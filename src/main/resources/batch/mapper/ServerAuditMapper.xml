@@ -10,4 +10,60 @@
         FROM TEST
         WHERE SEQ = #{seq}
     </select>
+
+    <select id="selectOneServerAuditMasterByConnectionId" parameterType="map" resultType="map">
+        SELECT CONNECTION_ID AS connectionId
+             ,USER_NAME AS userName
+             ,USER_HOST AS userHost
+             ,DATABASE_NAME AS databaseName
+             ,CONNECT_TIMESTAMP AS connectTimestamp
+             ,DISCONNECT_TIMESTAMP AS disconnectTimestamp
+        FROM SERVER_AUDIT_MASTER
+        WHERE CONNECTION_ID = #{connectionId}
+    </select>
+
+    <select id="selectPrivatePolicyHistByConnectionId" parameterType="map" resultType="map">
+        SELECT CONNECTION_ID AS connectionId
+             ,QUERY_ID AS queryId
+             ,START_TIMESTAMP AS startTimestamp
+             ,END_TIMESTAMP AS endTimestamp
+             ,QUERY AS query
+             ,POLICY_COUNT AS policyCount
+        FROM PRIVATE_POLICY_HIST
+        WHERE CONNECTION_ID = #{connectionId}
+    </select>
+
+    <select id="selectOneIncompleteQueryByConnectionId" parameterType="map" resultType="map">
+        SELECT CONNECTION_ID AS connectionId
+             ,START_TIMESTAMP AS startTimestamp
+             ,POLICY_COUNT AS policyCount
+        FROM INCOMPLETE_QUERY
+        WHERE CONNECTION_ID = #{connectionId}
+    </select>
+
+    <delete id="deleteIncompleteQueryByConnectionId" parameterType="map">
+        DELETE FROM INCOMPLETE_QUERY WHERE CONNECTION_ID = #{connectionId}
+    </delete>
+
+    <insert id="insertServerAuditMaster" parameterType="map">
+        INSERT INTO SERVER_AUDIT_MASTER ( CONNECTION_ID, USER_NAME, USER_HOST, DATABASE_NAME, CONNECT_TIMESTAMP, DISCONNECT_TIMESTAMP) VALUES
+        <foreach item="logs" index="index" collection="list" separator=",">
+            (#{logs.connectionId}, #{logs.userName}, #{logs.userHost}, #{logs.databaseName}, #{logs.connectTimestamp}, #{logs.disConnectTimestamp})
+        </foreach>
+        ON DUPLICATE KEY UPDATE CONNECT_TIMESTAMP = VALUES(CONNECT_TIMESTAMP), DISCONNECT_TIMESTAMP = VALUES(DISCONNECT_TIMESTAMP)
+    </insert>
+
+    <insert id="insertPrivatePolicyHist" parameterType="map">
+        INSERT INTO PRIVATE_POLICY_HIST ( CONNECTION_ID, QUERY_ID, START_TIMESTAMP, END_TIMESTAMP, QUERY, POLICY_COUNT) VALUES
+        <foreach item="logs" index="index" collection="list" separator=",">
+            (#{logs.connectionId}, #{logs.queryId}, #{logs.startTimestamp}, #{logs.endTimestamp}, #{logs.query}, #{logs.policyCount})
+        </foreach>
+        ON DUPLICATE KEY UPDATE START_TIMESTAMP = VALUES(START_TIMESTAMP), END_TIMESTAMP = VALUES(END_TIMESTAMP), QUERY = VALUES(QUERY), POLICY_COUNT = VALUES(POLICY_COUNT)
+    </insert>
+    <insert id="insertIncompleteQuery" parameterType="map">
+        INSERT INTO INCOMPLETE_QUERY (CONNECTION_ID ,START_TIMESTAMP ,POLICY_COUNT)
+        VALUES
+        (#{connectionId} ,#{startTimestamp} ,#{policyCount})
+    </insert>
+
 </mapper>
