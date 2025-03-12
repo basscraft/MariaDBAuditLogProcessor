@@ -4,13 +4,6 @@
 
 <mapper namespace="batch.mapper.ServerAuditMapper">
 
-    <select id="selectTest" parameterType="int" resultType="map">
-        SELECT SEQ
-             , NAME
-        FROM TEST
-        WHERE SEQ = #{seq}
-    </select>
-
     <select id="selectOneServerAuditMasterByConnectionId" parameterType="map" resultType="map">
         SELECT CONNECTION_ID AS connectionId
              ,USER_NAME AS userName
@@ -60,6 +53,7 @@
         </foreach>
         ON DUPLICATE KEY UPDATE START_TIMESTAMP = VALUES(START_TIMESTAMP), END_TIMESTAMP = VALUES(END_TIMESTAMP), QUERY = VALUES(QUERY), POLICY_COUNT = VALUES(POLICY_COUNT)
     </insert>
+
     <insert id="insertIncompleteQuery" parameterType="map">
         INSERT INTO INCOMPLETE_QUERY (CONNECTION_ID ,START_TIMESTAMP ,POLICY_COUNT)
         VALUES
