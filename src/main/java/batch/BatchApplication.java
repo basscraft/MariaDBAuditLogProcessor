@@ -1,6 +1,7 @@
 package batch;
 
 import batch.service.LogProcessService;
+import batch.utils.ArgumentUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
@@ -32,7 +33,15 @@ public class BatchApplication implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         try {
             log.info("{} Application Started", LogProcessService.class.getSimpleName());
-            service.auditLogParse();
+            String init = ArgumentUtils.getArgument(args, "init").toLowerCase();
+            if(!init.equals("all")) {
+                // Daily 실행
+                service.auditLogParse();
+            } else {
+                // 실행시 --init=all  argument 를 전달 하면 로그 디렉토리의 전체 파일을 대상으로 실행
+                service.auditLogParseAll();
+            }
+
             log.info("{} Application Completed", LogProcessService.class.getSimpleName());
         } catch (Exception e) {
             /*
