@@ -107,7 +107,7 @@ public class LogProcessService {
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(logFileName))));
-            //logList = new ArrayList<Map<String,Object>>();
+            logList = new ArrayList<>();
 
             String rawLog;
             int count = 0;
@@ -136,6 +136,7 @@ public class LogProcessService {
                  *    - [9] retcode : 로그 실행 결과 코드
                  */
                 try {
+                    log.debug("rawLog : {}", rawLog);
                     String[] logColumns = rawLog.split(",");
                     String timestamp = logColumns[0];
                     String serverHost = logColumns[1];
@@ -148,12 +149,14 @@ public class LogProcessService {
                     String object;
                     int retCode = CommonUtils.castInt(logColumns[logColumns.length - 1]);
 
-                    // 아래 계정은 로그를 저장하지 않음 (제외 계정)
-                    switch (userName) {
-                        case "dba": // ebmp 서비스용 계정
-                        case "server_audit": // 서버 감사로그용 계정
-                            continue;
-                    }
+                    /**
+                     * 아래 계정은 로그를 저장하지 않을 계정 나열 (제외 계정)
+                     switch (userName) {
+                     case "dba": // ebmp 서비스용 계정
+                     case "server_audit": // 서버 감사로그용 계정
+                     continue;
+                     }
+                      */
 
                     Map<String, Object> auditLog = new HashMap<String, Object>();
                     auditLog.put("connectionId", connectionId);
@@ -263,8 +266,9 @@ public class LogProcessService {
         stopWatch = new StopWatch(auditLogPath);
         stopWatch.start();
 
-        String currentDate = CommonUtils.getCurrentDateString("yyyyMMdd");
-        currentDate = "20250305";
+        //String currentDate = CommonUtils.getCurrentDateString("yyyyMMdd");
+        String currentDate = "20250305"; // for test
+
         String logFileName = auditLogPath + File.separator + auditLogFilePrefix + "-" + currentDate + auditLogFileExt;
 
         log.debug("auditLogPath : {}", auditLogPath);
