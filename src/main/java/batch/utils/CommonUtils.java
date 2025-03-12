@@ -2,12 +2,13 @@ package batch.utils;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 
 public class CommonUtils {
 
-    public static Timestamp getCurrentTimeStamp()   {
+    /*public static Timestamp getCurrentTimeStamp()   {
         return  new Timestamp(new GregorianCalendar().getTime().getTime());
     }
 
@@ -18,10 +19,17 @@ public class CommonUtils {
 
     public static String getCurrentDateString(String format)  {
         return formatTimestamp(getCurrentTimeStamp(), format, Locale.KOREA);
+    }*/
+
+    public static String getYesterdayDateString(String format)  {
+        SimpleDateFormat formatter = new SimpleDateFormat(format, Locale.KOREA);
+        Calendar calendar = new GregorianCalendar();
+        calendar.add(Calendar.DATE, -1);
+        return formatter.format(calendar.getTime());
     }
 
     public static int castInt(Object value) {
-        int out = 0;
+        int out;
         if (value == null || "".equals(value)) {
             out = 0;
         } else if (value instanceof Number) {
@@ -33,7 +41,7 @@ public class CommonUtils {
     }
 
     public static long castLong(Object value) {
-        long out = 0;
+        long out;
         if (value == null || "".equals(value)) {
             out = 0;
         } else if (value instanceof Number) {
