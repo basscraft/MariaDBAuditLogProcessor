@@ -8,7 +8,7 @@
 ![img.png](img.png)
 
 * Production - Ubuntu
-  $ java -jar -Dspring.profiles.active=prod -Dspring.application.json='{\"spring.datasource.username\":\"server_audit\",\"spring.datasource.password\":\"BassCraft@!5269\"}' MariaDBAuditLogProcessor.jar
+  $ java -jar -Dspring.profiles.active=prod -Dspring.application.json='{\"spring.datasource.username\":\"server_audit\",\"spring.datasource.password\":\"********\"}' MariaDBAuditLogProcessor.jar
 
 ### Guides
 
