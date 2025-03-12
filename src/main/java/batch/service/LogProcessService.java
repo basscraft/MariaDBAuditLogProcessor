@@ -101,7 +101,7 @@ public class LogProcessService {
 
             String rawLog;
             int count = 0;
-            while((rawLog = reader.readLine()) != null) {
+            while ((rawLog = reader.readLine()) != null) {
                 /**
                  *  server_audit_log file format
                  *  MariaDB server_audit_log format 참고
@@ -146,7 +146,7 @@ public class LogProcessService {
                      case "server_audit": // 서버 감사로그용 계정
                      continue;
                      }
-                      */
+                     */
 
                     Map<String, Object> auditLog = new HashMap<String, Object>();
                     auditLog.put("connectionId", connectionId);
@@ -196,35 +196,35 @@ public class LogProcessService {
                 count++;
             }
 
-            if(null == logList || logList.isEmpty()) return;
+            if (null == logList || logList.isEmpty()) return;
 
-            if(log.isDebugEnabled()) {
+            if (log.isDebugEnabled()) {
                 log.debug("log count : {}", count);
                 log.debug("log list : {}", logList);
             }
 
-            Map<String,Object> param = new HashMap<>();
+            Map<String, Object> param = new HashMap<>();
             param.put("list", logList);
             serverAuditMapper.insertServerAuditMaster(param);
-            for(Map<String,Object> item: logList) {
+            for (Map<String, Object> item : logList) {
                 /**
                  * 로그가 하루 단위로 rotate 되기 때문에
                  * 중간에 걸쳐서 실행된 로그가 있는 경우 진행 중인 상태로 DB에 저장
                  */
-                List<Map<String,Object>> privatePolicyList = (List<Map<String,Object>>)item.get("privatePolicyList");
-                if(null == privatePolicyList) {
+                List<Map<String, Object>> privatePolicyList = (List<Map<String, Object>>) item.get("privatePolicyList");
+                if (null == privatePolicyList) {
                     privatePolicyList = new ArrayList<>();
                 }
-                Map<String,Object> incomplete = (Map<String, Object>)item.get("privatePolicy");
-                if(null != incomplete) {
+                Map<String, Object> incomplete = (Map<String, Object>) item.get("privatePolicy");
+                if (null != incomplete) {
                     incomplete.put("connectionId", item.get("connectionId"));
                     serverAuditMapper.insertIncompleteQuery(incomplete);
                 }
-                for(Map<String,Object> privatePolicy :  privatePolicyList) {
+                for (Map<String, Object> privatePolicy : privatePolicyList) {
                     privatePolicy.put("connectionId", item.get("connectionId"));
                 }
-                if(!privatePolicyList.isEmpty()) {
-                    if(log.isDebugEnabled()) {
+                if (!privatePolicyList.isEmpty()) {
+                    if (log.isDebugEnabled()) {
                         log.debug("private policy list : {}", privatePolicyList);
                     }
                     param = new HashMap<>();
@@ -232,6 +232,8 @@ public class LogProcessService {
                     serverAuditMapper.insertPrivatePolicyHist(param);
                 }
             }
+        } catch (FileNotFoundException e) {
+            log.info("log file not found : {}", logFileName);
         } catch (Exception e) {
             // to-do : send alarm if you need, Implementation is required.
             log.error("log parse error", e);
@@ -266,7 +268,8 @@ public class LogProcessService {
         stopWatch = new StopWatch();
         stopWatch.start();
 
-        String currentDate = CommonUtils.getCurrentDateString("yyyyMMdd");
+        //String currentDate = CommonUtils.getCurrentDateString("yyyyMMdd");
+        String currentDate = CommonUtils.getYesterdayDateString("yyyyMMdd");
         //String currentDate = "20250305"; // for test
 
         String logFileName = auditLogPath + File.separator + auditLogFilePrefix + "-" + currentDate + auditLogFileExt;
