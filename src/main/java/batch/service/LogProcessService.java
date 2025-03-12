@@ -1,9 +1,9 @@
 package batch.service;
 
-import batch.CommonUtils;
+import batch.utils.CommonUtils;
 import batch.common.Constants;
 import batch.mapper.ServerAuditMapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ch.qos.logback.core.pattern.ConverterUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,8 +26,6 @@ public class LogProcessService {
 
     private final ServerAuditMapper serverAuditMapper;
     private StopWatch stopWatch;
-    private ObjectMapper objectMapper;
-
 
     @Value("${log.audit.path}")
     private String auditLogPath;
@@ -38,14 +36,6 @@ public class LogProcessService {
 
     // 해당일 로그 리스트
     private List<Map<String,Object>> logList;
-
-    /**
-     * project architecture test method
-     */
-    public void test() {
-        List<Map<String, String>> list = serverAuditMapper.selectTest(1);
-        log.debug("{}", list);
-    }
 
     private void addPrivatePolicyCount (Map<String, Object> auditLog, String privatePolicyType) {
         Map<String,Object> log = null;
@@ -76,7 +66,7 @@ public class LogProcessService {
                         log.remove("privatePolicy"); // 실행완료된 쿼리 삭제
                         break;
                     case Constants.AES_DECRYPT :
-                        privatePolicy.put("policyCount", (int)privatePolicy.get("policyCount") + 1);
+                        privatePolicy.put("policyCount", CommonUtils.castInt(privatePolicy.get("policyCount")) + 1);
                         log.put("privatePolicy", privatePolicy);
                         break;
                 }
@@ -147,7 +137,7 @@ public class LogProcessService {
                     String operation = logColumns[6];
                     String database = logColumns[7];
                     String object;
-                    int retCode = CommonUtils.castInt(logColumns[logColumns.length - 1]);
+                    int retCode;
 
                     /**
                      * 아래 계정은 로그를 저장하지 않을 계정 나열 (제외 계정)
@@ -174,6 +164,7 @@ public class LogProcessService {
                                 auditLog.put("query", object);
                                 addPrivatePolicyCount(auditLog, Constants.AES256_DECRYPT);
                             }
+                            retCode = CommonUtils.castInt(logColumns[logColumns.length - 1]);
                             break;
                         case Constants.OPERATION_CONNECT:
                             object = logColumns[8];
@@ -184,10 +175,16 @@ public class LogProcessService {
                             /**
                              * 로그가 하루 단위로 rotate 되기 때문에 이전에 저장된 로그 정보가 있으면 DB 값을 기준으로 처리
                              */
+                            retCode = CommonUtils.castInt(logColumns[logColumns.length - 1]);
                             getSavedLog(auditLog);
                         case Constants.OPERATION_DISCONNECT:
                             auditLog.put("disConnectTimestamp", timestamp);
                             setDisconnectTimestamp(auditLog);
+                            retCode = CommonUtils.castInt(logColumns[logColumns.length - 1]);
+                            break;
+                        case Constants.OPERATION_FAILED_CONNECT:
+                            auditLog.put("disConnectTimestamp", timestamp);
+                            retCode = CommonUtils.castInt(logColumns[logColumns.length - 1]);
                             break;
                         default:
                             continue; // 삭제 후 재실행 로그 수 다름
@@ -203,7 +200,7 @@ public class LogProcessService {
 
             if(log.isDebugEnabled()) {
                 log.debug("log count : {}", count);
-                log.debug("log list : {}", objectMapper.writeValueAsString(logList));
+                log.debug("log list : {}", logList);
             }
 
             Map<String,Object> param = new HashMap<>();
@@ -228,7 +225,7 @@ public class LogProcessService {
                 }
                 if(!privatePolicyList.isEmpty()) {
                     if(log.isDebugEnabled()) {
-                        log.debug("private policy list : {}", objectMapper.writeValueAsString(privatePolicyList));
+                        log.debug("private policy list : {}", privatePolicyList);
                     }
                     param = new HashMap<>();
                     param.put("list", privatePolicyList);
@@ -236,7 +233,7 @@ public class LogProcessService {
                 }
             }
         } catch (Exception e) {
-            // send Alarm
+            // to-do : send alarm if you need, Implementation is required.
             log.error("log parse error", e);
             //throw new RuntimeException(e);
         } finally {
@@ -262,23 +259,58 @@ public class LogProcessService {
         }
     }
 
+    /**
+     * 실행 시간 기준 전일자 로그 파일에 대해 로그 분석 수행 (메인 함수)
+     */
     public void auditLogParse() {
-        stopWatch = new StopWatch(auditLogPath);
+        stopWatch = new StopWatch();
         stopWatch.start();
 
-        //String currentDate = CommonUtils.getCurrentDateString("yyyyMMdd");
-        String currentDate = "20250305"; // for test
+        String currentDate = CommonUtils.getCurrentDateString("yyyyMMdd");
+        //String currentDate = "20250305"; // for test
 
         String logFileName = auditLogPath + File.separator + auditLogFilePrefix + "-" + currentDate + auditLogFileExt;
 
-        log.debug("auditLogPath : {}", auditLogPath);
-        log.debug("auditLogFilePrefix : {}", auditLogFilePrefix);
-        log.debug("auditLogFileExt : {}", auditLogFileExt);
-        log.debug("currentDate : {}", currentDate);
-        log.debug("logFileName : {}", logFileName);
+        if(log.isDebugEnabled()) {
+            log.debug("auditLogPath : {}", auditLogPath);
+            log.debug("auditLogFilePrefix : {}", auditLogFilePrefix);
+            log.debug("auditLogFileExt : {}", auditLogFileExt);
+            log.debug("currentDate : {}", currentDate);
+            log.debug("logFileName : {}", logFileName);
+        }
         parseDbAuditLog(logFileName);
 
         stopWatch.stop();
-        log.info("#### auditLog parse success : {}", stopWatch.getTotalTimeMillis());
+        log.info("#### auditLogParse parse success : {}", stopWatch.getTotalTimeMillis());
     }
+
+    public void auditLogParseAll() {
+        stopWatch = new StopWatch();
+        stopWatch.start();
+
+        if(log.isDebugEnabled()) {
+            log.debug("auditLogPath : {}", auditLogPath);
+            log.debug("auditLogFilePrefix : {}", auditLogFilePrefix);
+            log.debug("auditLogFileExt : {}", auditLogFileExt);
+        }
+
+        File auditLogDir = new File(auditLogPath);
+        File[] auditFiles = auditLogDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File auditLogDir, String name) {
+                return name.endsWith(auditLogFileExt);
+            }
+        });
+
+        assert auditFiles != null;
+        for(File auditFile : auditFiles) {
+            String logFileName = auditFile.getPath();
+            log.info("auditLogFile : {}", logFileName);
+            parseDbAuditLog(logFileName);
+        }
+
+        stopWatch.stop();
+        log.info("#### auditLogParseAll parse success : {}", stopWatch.getTotalTimeMillis());
+    }
+
 }
