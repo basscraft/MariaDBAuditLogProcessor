@@ -14,3 +14,5 @@
 
 #### [MariaDB] 보안 취약점 점검 #7 감사 정책 준비
 * https://opensrc.tistory.com/261
+#### [MariaDB] 보안 취약점 점검 #8 감사 로그 관리
+* https://opensrc.tistory.com/264
