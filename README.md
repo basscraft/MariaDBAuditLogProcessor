@@ -64,3 +64,5 @@ $ java -jar -Dspring.profiles.active=prod -Dspring.application.json='{\"spring.d
 * https://opensrc.tistory.com/261
 #### [MariaDB] 보안 취약점 점검 #8 감사 로그 관리
 * https://opensrc.tistory.com/264
+#### MariaDB Audit Plugin - Log Format
+* https://mariadb.com/kb/en/mariadb-audit-plugin-log-format/
